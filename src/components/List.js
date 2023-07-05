@@ -1,79 +1,66 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import CellRenderer from "./CellRenderer";
-import * as ReactDOM from "react-dom/client";
-import { root } from "..";
+import { DATA } from "../constants/data";
+import useUpdateEffect from "../hooks/useUpdateEffect";
 
 const List = () => {
   const ref = useRef();
-  const items = [];
-  for (let i = 0; i < 1; i++) {
-    items.push(i);
-  }
+  const [keys, setKeys] = useState(new Set());
+
+  const [state, setState] = useState(
+    Array(20)
+      .fill(0)
+      .map((item, index) => {
+        keys.add(index);
+        return index;
+      })
+  );
+
+  var observer;
   useEffect(() => {
     const observerCallback = (entries) => {
       entries.forEach((entry, index, entries) => {
-        // if (index == 0) {
-        //   console.log(entry.target.id);
-        //   return;
-        // }
-        // console.log(entry.isIntersecting);
         // if (!entry.isIntersecting) {
         //   observer.unobserve(entry.target);
         //   entry.target.remove();
         // }
-        //const currentId = entry.target.id;
-        if (!entry.isIntersecting) {
-          observer.unobserve(entry.target);
-          entry.target.remove();
-        }
         if (entry.isIntersecting) {
           const currentId = +entry.target.id;
           const nextId = currentId + 1;
-          document.createElement("afijh");
-          //   const element = ReactDOM.render(
-          //     <CellRenderer index={+currentId + 1} id={`${+currentId + 1}`} />,
-          //     document.getElementById("root")
-          //   );
+          const prevId = currentId - 1;
 
-          //   ref.current.appendChild(
-          //     CellRenderer({ index: +currentId + 1, id: `${+currentId + 1}` })
-          //   );
-          console.log(currentId);
+          if (!keys.has(nextId) && nextId < DATA.length) {
+            keys.add(nextId);
+            setState([...state, nextId]);
+          }
+          if (!keys.has(prevId) && prevId >= 0) {
+            keys.add(prevId);
+            setState([...state, prevId]);
+          }
         }
-        /**** 
-        if (entry.isIntersecting) {
-          const currentId = entry.target.id;
-
-          ReactDOM.render(
-            <CellRenderer index={+currentId + 1} id={`${+currentId + 1}`} />,
-            document.getElementById("root")
-          );
-          const listContainer = findDOMNode
-          ref.current.appendChild(document.getElementById(`${+currentId + 1}`));
-            ****/
-        // ReactDOM.render(
-        //   <CellRenderer index={+currentId + 1} id={`${+currentId + 1}`} />,
-        //   ref.current
-        // );
-        //document.getElementById("listContainer").appendChild();
-        //   observer.observe(document.getElementById(`${+currentId + 1}`));
-        //}
       });
     };
-
-    const observer = new IntersectionObserver(observerCallback, {
+    observer = new IntersectionObserver(observerCallback, {
       root: document.getElementById("listContainer"),
       rootMargin: "300px",
       threshold: 1.0,
     });
-    items.forEach((item) => {
-      observer.observe(document.getElementById(`${item}`));
+    state.forEach((item, index) => {
+      observer.observe(document.getElementById(`${index}`));
     });
 
     return () => {
       observer.disconnect();
     };
-  }, []);
+  }, [state]);
+
+  useEffect(() => {
+    console.log("state useupdate", state);
+    state.forEach((item) => {
+      observer?.observe(document.getElementById(item));
+    });
+  }, [state]);
+
   return (
     <div
       ref={ref}
@@ -85,11 +72,15 @@ const List = () => {
         overflowY: "scroll",
         justifyContent: "center",
         alignItems: "center",
+        position: "relative",
       }}
     >
-      {items.map((item) => {
-        return <CellRenderer key={item} id={`${item}`} index={item} />;
-      })}
+      <div style={{ width: 200, height: DATA.length * 50 }}>
+        {state.map((item) => (
+          <CellRenderer index={item} id={`${item}`} key={item} />
+        ))}
+        {console.log(state)}
+      </div>
     </div>
   );
 };
